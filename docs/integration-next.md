@@ -38,7 +38,10 @@
 **前置研究**：dsh-agent 的 `agent.inbox` / `owner.followup` 精确接口（dsh-tool-jobs 是
 现成参考实现）；轮询与 HMR 卸载的清理。
 
-## 3. UI client module（v0.5，大工程）
+## 3. UI client module（v0.5，设计已定稿 → docs/ui-client-module.md）
+
+**状态**：可行性设计已交付（client 半区契约映射 + host Remote 数据通道 + M0-M3 里程碑）。
+实现前置：deepseek-harness 源码仓 dev:web 构建工作流（client bundle 注入 boot graph）。
 
 **目标**：control 任务看板（TASK 列表/审批闸/状态机）嵌入 DSH GUI。
 
