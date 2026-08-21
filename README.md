@@ -57,17 +57,16 @@ rc.8 系列）。
 KB 检索不走本插件：由 web profile 的 `@deepseek-ai/dsh-mcp-client` 桥接 PieKBS
 （`mcp__piekbs__kb_search` / `kb_add`）。
 
-## 独立看板（v0.5）
+## 看板（v0.5，内建）
 
-`scripts/board.mjs`：静态任务看板 + control-api 代理（凭据只在服务端 env，浏览器不经手 token）。
+插件在 webServer 服务存在时注册 **`/control/dashboard`**（任务/审批/审计三 tab，深色 UI），
+同源代理 `/control/dashboard/api/*`（Bearer 服务端持有，浏览器不经手 token）。
 
 ```bash
-# 依赖 dsh-web.env 的 CONTROL_API_USER/PASSWORD（或 CONTROL_API_TOKEN）
-systemctl --user enable --now dsh-board   # http://127.0.0.1:8787
+# dsh-web 重启后生效；打开
+#   http://127.0.0.1:3080/control/dashboard
+# 独立版 dsh-board.service 已废弃移除（被内建版取代）
 ```
-
-功能：任务列表（阶段/状态徽标）、待审批（批准/驳回）、30s 自动刷新。
-单元文件模板：`scripts/dsh-board.service.example`。
 
 ## 配置
 
@@ -91,5 +90,4 @@ systemctl --user enable --now dsh-board   # http://127.0.0.1:8787
 - [x] v0.2 执行面工具（reconcile/task_execute/grounding_check/pipeline_status，TASK-009）+ 末段技能（merge-review/deliver-archive）
 - [x] v0.3 会话↔任务绑定（claim/context，task_id 回落 + 持久化）
 - [ ] v0.4 反向通知（状态变化推送到 DSH 会话）
-- [x] v0.5 独立看板（方案 1）：scripts/board.mjs 静态页 + control-api 代理（凭据服务端持有），
-       systemd dsh-board.service 常驻（127.0.0.1:8787，任务/待审批/审批操作）；GUI 嵌入留待源码构建能力
+- [x] v0.5 看板：内建 /control/dashboard（同源代理，凭据不进浏览器），独立 dsh-board 服务已移除
