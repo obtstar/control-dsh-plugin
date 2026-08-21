@@ -1,7 +1,7 @@
 {
   "name": "control-dsh-plugin",
-  "version": "0.2.0",
-  "description": "control 平台 DSH 集成插件：control-api 任务/审批/审计/对账工具桥 + 流水线阶段执行引导（模型接入走 DSH，不再经 control 的 LiteLLM 通道）",
+  "version": "0.3.0",
+  "description": "control 平台 DSH 集成插件：任务/审批/审计/对账工具桥 + 流水线阶段执行引导 + 会话任务绑定（模型接入走 DSH）",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
