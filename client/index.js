@@ -1,6 +1,6 @@
-// control-dsh-plugin client 半区（浏览器端）v0.6：
-//   sidebar 注入 "▤ Control" 导航项（点击 → centerCol 渲染 dashboard，替换对话视图）
-// 不注入 header/tabs，不复写 CSS，直接复用 DSH 布局类名。
+// control-dsh-plugin client 半区（浏览器端）v0.7：
+//   sidebar 注入 "▤ Control" 导航项（点击 → centerCol 渲染 dashboard）
+//   主题复用 DSH CSS 变量，i18n 支持 zh/en。
 // 经 dsh-client-modules boot graph 加载。
 window.__ModuleLoader__.load({
 	id: "control-dsh-plugin",
@@ -11,9 +11,64 @@ window.__ModuleLoader__.load({
 		const name = "control-ui";
 		const inject = [];
 
+		// ── i18n 字典 ──────────────────────────────────────────
+		const NS = 'control';
+		const zh = {
+			'sidebar.label': 'Control',
+			'sidebar.title': 'control 任务看板',
+			'dashboard.title': '🎛️ Control Platform',
+			'dashboard.status.loading': '加载中...',
+			'dashboard.status.connected': '已连接',
+			'dashboard.tab.tasks': '任务',
+			'dashboard.tab.approvals': '审批',
+			'dashboard.tab.audit': '审计',
+			'dashboard.empty.tasks': '暂无任务',
+			'dashboard.empty.approvals': '暂无待审批',
+			'dashboard.empty.audit': '暂无审计记录',
+			'dashboard.error.load': '加载失败',
+			'dashboard.table.id': 'ID',
+			'dashboard.table.title': '标题',
+			'dashboard.table.stage': '阶段',
+			'dashboard.table.status': '状态',
+			'dashboard.table.updated': '更新时间',
+			'dashboard.table.task': '任务',
+			'dashboard.table.action': '动作',
+			'dashboard.table.operator': '操作人',
+			'dashboard.table.time': '时间',
+			'dashboard.card.role': '角色',
+		};
+		const en = {
+			'sidebar.label': 'Control',
+			'sidebar.title': 'control task board',
+			'dashboard.title': '🎛️ Control Platform',
+			'dashboard.status.loading': 'Loading...',
+			'dashboard.status.connected': 'Connected',
+			'dashboard.tab.tasks': 'Tasks',
+			'dashboard.tab.approvals': 'Approvals',
+			'dashboard.tab.audit': 'Audit',
+			'dashboard.empty.tasks': 'No tasks',
+			'dashboard.empty.approvals': 'No pending approvals',
+			'dashboard.empty.audit': 'No audit entries',
+			'dashboard.error.load': 'Failed to load',
+			'dashboard.table.id': 'ID',
+			'dashboard.table.title': 'Title',
+			'dashboard.table.stage': 'Stage',
+			'dashboard.table.status': 'Status',
+			'dashboard.table.updated': 'Updated',
+			'dashboard.table.task': 'Task',
+			'dashboard.table.action': 'Action',
+			'dashboard.table.operator': 'Operator',
+			'dashboard.table.time': 'Time',
+			'dashboard.card.role': 'Role',
+		};
+
 		function apply() {
 			if (typeof document === "undefined") return;
 			const API_PREFIX = "/control/dashboard/api";
+
+			// 检测语言：优先 DSH 全局 locale，其次浏览器
+			const lang = (window.__DSH_LOCALE__ || navigator.language || 'zh').startsWith('zh') ? 'zh' : 'en';
+			const t = (key) => (lang === 'zh' ? zh : en)[key] || key;
 
 			// ── 工具 ─────────────────────────────────────────────
 			async function fetchCount() {
@@ -53,10 +108,8 @@ window.__ModuleLoader__.load({
 			let isControlActive = false;
 
 			function findCenterCol() {
-				// 找到 centerCol（会话主体区域）
 				const cols = document.querySelectorAll('[class*="_centerCol"]');
 				for (const el of cols) {
-					// 确保是 conversation 的 centerCol，不是其他
 					if (el.closest('[class*="_frame"]')) return el;
 				}
 				return null;
@@ -65,41 +118,36 @@ window.__ModuleLoader__.load({
 			function showControlView() {
 				const centerCol = findCenterCol();
 				if (!centerCol) return;
-
-				// 如果已经激活，不重复操作
 				if (isControlActive) return;
 
-				// 保存原始视图（第一个子元素通常是会话内容）
 				if (!originalView) {
 					originalView = centerCol.firstElementChild;
 				}
-
-				// 隐藏原始视图
 				if (originalView) {
 					originalView.style.display = "none";
 				}
 
-				// 创建 Control 视图（复用 centerCol 的 flex 布局）
 				if (!controlView) {
 					controlView = document.createElement("div");
 					controlView.dataset.controlView = "true";
-					// 不设置任何样式，让父级 centerCol 的 flex 布局控制
-					// centerCol 已经是 display:flex; flex-direction:column; overflow:hidden;
-					controlView.style.cssText = "flex:1;min-width:0;overflow:auto;";
+					// 复用 centerCol 的 flex 布局，只设置必要的填充样式
+					controlView.style.cssText = "flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column;";
 
-					// 内嵌 iframe 加载 dashboard
+					// 内嵌 iframe 加载 dashboard（带 i18n 参数）
 					const frame = document.createElement("iframe");
-					frame.src = "/control/dashboard";
+					frame.src = `/control/dashboard?lang=${lang}`;
 					frame.style.cssText = "width:100%;height:100%;border:0;display:block;";
+					frame.title = t('sidebar.title');
 					controlView.appendChild(frame);
 					centerCol.appendChild(controlView);
 				} else {
-					controlView.style.display = "block";
+					controlView.style.display = "flex";
+					// 更新语言参数
+					const frame = controlView.querySelector("iframe");
+					if (frame) frame.src = `/control/dashboard?lang=${lang}`;
 				}
 
 				isControlActive = true;
-
-				// 高亮 sidebar 按钮
 				if (sidebarItem) {
 					sidebarItem.style.background = "var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.06))";
 				}
@@ -107,20 +155,13 @@ window.__ModuleLoader__.load({
 
 			function hideControlView() {
 				if (!isControlActive) return;
-
-				// 隐藏 Control 视图
 				if (controlView) {
 					controlView.style.display = "none";
 				}
-
-				// 恢复原始视图
 				if (originalView) {
 					originalView.style.display = "";
 				}
-
 				isControlActive = false;
-
-				// 取消高亮 sidebar 按钮
 				if (sidebarItem) {
 					sidebarItem.style.background = "transparent";
 				}
@@ -140,7 +181,7 @@ window.__ModuleLoader__.load({
 
 				const item = document.createElement("button");
 				item.dataset.controlSidebar = "true";
-				// 样式与 sidebar 其他项一致，使用 DSH 变量
+				// 完全复用 sidebar 项的样式，使用 DSH 变量
 				item.style.cssText = "display:flex;align-items:center;gap:8px;width:calc(100% - 8px);margin:2px 4px;padding:8px 10px;border:none;border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);font-size:14px;cursor:pointer;text-align:left;transition:background 0.15s;";
 				item.addEventListener("mouseenter", () => {
 					if (!isControlActive) item.style.background = "var(--dsw-alias-interactive-bg-hover)";
@@ -148,8 +189,8 @@ window.__ModuleLoader__.load({
 				item.addEventListener("mouseleave", () => {
 					if (!isControlActive) item.style.background = "transparent";
 				});
-				item.innerHTML = '<span style="opacity:.8">▤</span> Control <b data-control-sidebar-count style="margin-left:auto;opacity:.7;font-size:12px">–</b>';
-				item.title = "control 任务看板";
+				item.innerHTML = `<span style="opacity:.8">▤</span> ${t('sidebar.label')} <b data-control-sidebar-count style="margin-left:auto;opacity:.7;font-size:12px">–</b>`;
+				item.title = t('sidebar.title');
 				item.addEventListener("click", () => toggleControlView());
 				region.insertBefore(item, region.firstChild);
 				sidebarItem = item;
