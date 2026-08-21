@@ -1,6 +1,6 @@
 {
   "name": "control-dsh-plugin",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "control 平台 DSH 集成插件：任务/审批/审计/对账工具桥 + 流水线阶段执行引导 + 会话任务绑定（模型接入走 DSH）",
   "type": "module",
   "main": "lib/index.js",
@@ -9,7 +9,8 @@
   },
   "license": "MIT",
   "dependencies": {
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "@deepseek-ai/dsh-llm": "^0.1.0-rc.8"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
