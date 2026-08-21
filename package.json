@@ -5,7 +5,11 @@
   "type": "module",
   "main": "lib/index.js",
   "exports": {
-    ".": "./lib/index.js"
+    ".": "./lib/index.js",
+    "./client": {
+      "default": "./client/index.js"
+    },
+    "./package.json": "./package.json"
   },
   "license": "MIT",
   "dependencies": {
@@ -16,5 +20,10 @@
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-tools": "^0.1.0-rc.8",
     "@deepseek-ai/schemastery": "^3.18.1"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web"
+    }
   }
 }
