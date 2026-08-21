@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>control 任务看板</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, sans-serif; margin: 0; background: #f5f6f8; color: #1a1a1a; }
+  header { background: #1f2937; color: #fff; padding: 10px 20px; display: flex; gap: 12px; align-items: center; }
+  header h1 { font-size: 16px; margin: 0; flex: 1; }
+  button { cursor: pointer; padding: 4px 10px; border-radius: 6px; border: 1px solid #ccc; background: #fff; }
+  main { padding: 16px 20px; max-width: 1100px; margin: 0 auto; }
+  section { margin-bottom: 20px; background: #fff; border-radius: 8px; padding: 12px 16px; box-shadow: 0 1px 2px #0002; }
+  h2 { font-size: 14px; margin: 0 0 8px; color: #374151; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; }
+  th { color: #6b7280; font-weight: 600; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; }
+  .s-requirements{background:#fef3c7;color:#92400e}.s-design{background:#e0e7ff;color:#3730a3}
+  .s-coding{background:#dcfce7;color:#166534}.s-testing{background:#fce7f3;color:#9d174d}
+  .s-merge{background:#cffafe;color:#155e75}.s-deliver{background:#e5e7eb;color:#374151}
+  .st-awaiting_approval{background:#fef3c7;color:#92400e}.st-running{background:#dbeafe;color:#1e40af}
+  .st-pending{background:#e5e7eb;color:#374151}.st-paused{background:#fee2e2;color:#991b1b}
+  .st-delivered{background:#dcfce7;color:#166534}.st-merged{background:#cffafe;color:#155e75}
+  #status { font-size: 12px; color: #9ca3af; }
+  .err { color: #b91c1c; font-size: 13px; padding: 8px 0; }
+  details summary { cursor: pointer; color: #2563eb; font-size: 13px; }
+  .approve { background: #dcfce7; border-color: #16a34a; color: #166534; }
+  .reject { background: #fee2e2; border-color: #dc2626; color: #991b1b; }
+  td .act { margin-left: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>control 任务看板</h1>
+  <span id="status">加载中…</span>
+  <button onclick="loadAll()">刷新</button>
+</header>
+<main>
+  <section>
+    <h2>待审批</h2>
+    <div id="approvals"></div>
+  </section>
+  <section>
+    <h2>任务</h2>
+    <div id="tasks"></div>
+  </section>
+</main>
+<script>
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const badge = (cls, text) => `<span class="badge ${cls}">${esc(text)}</span>`;
+
+async function jget(p) {
+  const r = await fetch(p);
+  const t = await r.text();
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${t.slice(0, 200)}`);
+  return t ? JSON.parse(t) : null;
+}
+async function jpost(p, body) {
+  const r = await fetch(p, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const t = await r.text();
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${t.slice(0, 200)}`);
+  return t ? JSON.parse(t) : null;
+}
+
+async function loadAll() {
+  document.getElementById("status").textContent = "加载中…";
+  try {
+    const [approvals, tasks] = await Promise.all([jget("/api/approvals/pending"), jget("/api/tasks")]);
+    renderApprovals(approvals || []);
+    renderTasks(tasks || []);
+    document.getElementById("status").textContent = `更新于 ${new Date().toLocaleTimeString()} · ${(tasks || []).length} 任务`;
+  } catch (e) {
+    document.getElementById("status").textContent = "加载失败";
+    document.getElementById("tasks").innerHTML = `<div class="err">${esc(e.message)}</div>`;
+  }
+}
+
+function renderApprovals(rows) {
+  const el = document.getElementById("approvals");
+  if (!rows.length) { el.innerHTML = "<div style='color:#9ca3af'>无待审批项</div>"; return; }
+  el.innerHTML = `<table><tr><th>任务</th><th>阶段</th><th>审批角色</th><th>产物</th><th>操作</th></tr>${rows.map((a) => `
+    <tr>
+      <td>${esc(a.task_id)}<div style="color:#6b7280;font-size:12px">${esc(a.title || "")}</div></td>
+      <td>${badge("s-" + esc(a.stage), a.stage)}</td>
+      <td>${esc(a.role)}</td>
+      <td style="font-size:12px">${esc(a.artifact || "")}</td>
+      <td>
+        <button class="approve act" onclick="act('${esc(a.task_id)}','approve')">批准</button>
+        <button class="reject act" onclick="act('${esc(a.task_id)}','reject')">驳回</button>
+      </td>
+    </tr>`).join("")}</table>`;
+}
+
+function renderTasks(rows) {
+  const el = document.getElementById("tasks");
+  el.innerHTML = `<table><tr><th>任务</th><th>阶段</th><th>状态</th><th>仓库</th><th>更新</th></tr>${rows.map((t) => `
+    <tr>
+      <td>${esc(t.task_id)}<div style="color:#6b7280;font-size:12px">${esc(t.title || "")}</div></td>
+      <td>${badge("s-" + esc(t.stage), t.stage || "—")}</td>
+      <td>${badge("st-" + esc(t.status), t.status || "—")}</td>
+      <td>${esc(t.repo_key || "")}</td>
+      <td style="font-size:12px;color:#6b7280">${esc((t.updated_at || "").slice(0, 16))}</td>
+    </tr>`).join("")}</table>`;
+}
+
+async function act(taskId, action) {
+  const comment = action === "reject" ? prompt(`驳回 ${taskId}，请输入批注（必填）：`) : "";
+  if (action === "reject" && !comment) { alert("驳回必须附批注"); return; }
+  try {
+    const r = await jpost(`/api/tasks/${encodeURIComponent(taskId)}/action`, { action, comment: comment || "" });
+    alert(`${taskId} → ${r.status}（${r.stage || ""}）`);
+    loadAll();
+  } catch (e) { alert(e.message); }
+}
+
+loadAll();
+setInterval(loadAll, 30000);
+</script>
+</body>
+</html>
