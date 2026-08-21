@@ -1,13 +1,16 @@
 {
   "name": "control-dsh-plugin",
-  "version": "0.1.0",
-  "description": "control 平台 DSH 集成插件：control-api 任务/审批/审计工具桥（模型接入走 DSH，不再经 control 的 LiteLLM 通道）",
+  "version": "0.2.0",
+  "description": "control 平台 DSH 集成插件：control-api 任务/审批/审计/对账工具桥 + 流水线阶段执行引导（模型接入走 DSH，不再经 control 的 LiteLLM 通道）",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js"
   },
   "license": "MIT",
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-tools": "^0.1.0-rc.8",
