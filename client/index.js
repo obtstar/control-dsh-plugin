@@ -261,20 +261,26 @@ window.__ModuleLoader__.load({
 			}
 
 			function showControlView() {
+				const centerCol = findCenterCol();
+				if (!centerCol) return;
 				if (isControlActive) return;
 
 				// 创建 controlView（如果不存在）
 				if (!controlView) {
 					controlView = document.createElement("div");
 					controlView.dataset.controlView = "true";
-					// 固定定位覆盖整个视口，但留出 sidebar 空间
-					// 使用 !important 确保背景色覆盖，避免透明
-					controlView.style.cssText = "position:fixed;top:0;left:var(--dsw-sidebar-width,260px);right:0;bottom:0;z-index:100;padding:16px;background-color:inherit;overflow:auto;";
+					// 使用 absolute 定位覆盖 centerCol，不依赖 flex 布局
+					controlView.style.cssText = "position:absolute;top:0;left:0;width:100%;height:100%;padding:16px;background-color:white;overflow:auto;z-index:10;";
 					renderDashboard(controlView);
 				}
 				
-				// 添加到 body
-				document.body.appendChild(controlView);
+				// 确保 centerCol 有 relative 定位
+				if (getComputedStyle(centerCol).position === 'static') {
+					centerCol.style.position = 'relative';
+				}
+				
+				// 添加 controlView 到 centerCol
+				centerCol.appendChild(controlView);
 
 				isControlActive = true;
 				if (sidebarItem) {
