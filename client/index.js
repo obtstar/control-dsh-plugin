@@ -1,6 +1,7 @@
 // control-dsh-plugin client 半区（浏览器端）v0.5：
-//   1) 会话页 header 注入 control 待审批徽标
-//   2) 将会话区域的 "conversation.view" 注入 Control 标签页（与 Chat/Trajectory 并列）
+//   1) sidebar 注入 "▤ Control" 导航项（点击 → 主区切换 Control 标签页）
+//   2) header 注入 control 待审批徽标
+//   3) conversation 区域注入 Control 标签页（与 Chat/Trajectory 并列）
 // 经 dsh-client-modules boot graph 加载。
 window.__ModuleLoader__.load({
 	id: "control-dsh-plugin",
@@ -61,13 +62,42 @@ window.__ModuleLoader__.load({
 				headerBadge = div;
 			}
 
-			// ── 2) 注入 conversation.view 标签页 ─────────────────
-			// 找到 conversation 区域的标签栏，注入 "Control" 标签
+			// ── 2) sidebar 导航项 ────────────────────────────────
+			let sidebarItem = null;
+
+			function findSidebarRegion() {
+				// sidebar 主区域（workspaces 列表容器）；footer 区域不要
+				const areas = document.querySelectorAll('[class$="_regionArea"]');
+				for (const el of areas) {
+					if (el.querySelector('[class$="_newSession"]') || el.querySelector('[class$="_settingsArea"]')) continue;
+					return el;
+				}
+				return null;
+			}
+
+			function injectSidebar(region) {
+				if (!region) return;
+				if (sidebarItem && sidebarItem.isConnected) return;
+				const item = document.createElement("button");
+				item.dataset.controlSidebar = "true";
+				item.style.cssText = "display:flex;align-items:center;gap:8px;width:calc(100% - 8px);margin:2px 4px;padding:8px 10px;border:none;border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary,#f0f6fc);font-size:14px;cursor:pointer;text-align:left;";
+				item.addEventListener("mouseenter", () => { item.style.background = "var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.06))"; });
+				item.addEventListener("mouseleave", () => { item.style.background = "transparent"; });
+				item.innerHTML = "<span style=\"opacity:.8\">▤</span> Control <b data-control-sidebar-count style=\"margin-left:auto;opacity:.7;font-size:12px\">–</b>";
+				item.title = "control 任务看板（待审批数）";
+				// 点击 sidebar 按钮 → 切换到 Control 标签页
+				item.addEventListener("click", () => switchToControlTab());
+				region.insertBefore(item, region.firstChild);
+				sidebarItem = item;
+			}
+
+			// ── 3) 注入 conversation.view 标签页 ─────────────────
+			let controlTab = null;
+			let controlPanel = null;
+
 			function findConversationTabBar() {
-				// 标签栏通常在 conversation 区域内，包含 Chat/Trajectory 等按钮
 				const tabs = document.querySelectorAll('[class*="_tab"], [role="tablist"]');
 				for (const el of tabs) {
-					// 检查是否包含 Chat 或 Trajectory 文本
 					if (el.textContent.includes("Chat") || el.textContent.includes("Trajectory") || el.textContent.includes("对话") || el.textContent.includes("轨迹")) {
 						return el;
 					}
@@ -76,7 +106,6 @@ window.__ModuleLoader__.load({
 			}
 
 			function findConversationBody() {
-				// 找到 conversation 内容区域（标签页内容容器）
 				const bodies = document.querySelectorAll('[class*="_centerCol"], [class*="_sessionBody"]');
 				for (const el of bodies) {
 					if (el.children.length > 0) return el;
@@ -84,15 +113,10 @@ window.__ModuleLoader__.load({
 				return null;
 			}
 
-			let controlTab = null;
-			let controlPanel = null;
-			let activeTabId = null;
-
 			function switchToControlTab() {
-				// 隐藏其他标签页内容，显示 Control
+				// 显示 Control 面板
 				if (controlPanel) {
 					controlPanel.style.display = "block";
-					// 尝试隐藏其他视图
 					const siblings = controlPanel.parentElement?.children;
 					if (siblings) {
 						for (const sib of siblings) {
@@ -102,20 +126,18 @@ window.__ModuleLoader__.load({
 						}
 					}
 				}
-				// 更新标签样式
+				// 激活 Control 标签样式
 				if (controlTab) {
-					controlTab.style.background = "var(--dsw-accent,#1f6feb)";
-					controlTab.style.color = "white";
-					controlTab.style.borderColor = "var(--dsw-accent,#1f6feb)";
+					controlTab.style.borderBottom = "2px solid var(--dsw-accent,#1f6feb)";
+					controlTab.style.color = "var(--dsw-alias-label-primary,#f0f6fc)";
 				}
 				// 重置其他标签
 				const tabBar = controlTab?.parentElement;
 				if (tabBar) {
 					for (const tab of tabBar.children) {
 						if (tab !== controlTab && tab.dataset?.controlTab !== "true") {
-							tab.style.background = "";
+							tab.style.borderBottom = "2px solid transparent";
 							tab.style.color = "";
-							tab.style.borderColor = "";
 						}
 					}
 				}
@@ -125,27 +147,16 @@ window.__ModuleLoader__.load({
 				if (!tabBar) return;
 				if (controlTab && controlTab.isConnected) return;
 
-				// 创建 Control 标签按钮
 				const tab = document.createElement("button");
 				tab.dataset.controlTab = "true";
 				tab.textContent = "Control";
-				// 复制现有标签的样式
+				// 复制现有标签样式
 				const existingTab = tabBar.querySelector("button, [role='tab']");
 				if (existingTab) {
 					tab.style.cssText = window.getComputedStyle(existingTab).cssText;
 				} else {
 					tab.style.cssText = "padding:6px 14px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--dsw-alias-label-secondary,#9ca3af);cursor:pointer;font-size:13px;transition:all 0.15s;";
 				}
-				tab.addEventListener("mouseenter", () => {
-					if (tab.style.borderBottomColor !== "var(--dsw-accent, rgb(31, 111, 251))") {
-						tab.style.borderBottomColor = "var(--dsw-alias-border-l2,#30363d)";
-					}
-				});
-				tab.addEventListener("mouseleave", () => {
-					if (tab.style.borderBottomColor !== "var(--dsw-accent, rgb(31, 111, 251))") {
-						tab.style.borderBottomColor = "transparent";
-					}
-				});
 				tab.addEventListener("click", () => switchToControlTab());
 				tabBar.appendChild(tab);
 				controlTab = tab;
@@ -155,7 +166,7 @@ window.__ModuleLoader__.load({
 				if (body) {
 					const panel = document.createElement("div");
 					panel.dataset.controlPanel = "true";
-					panel.style.cssText = "display:none;height:100%;width:100%;";
+					panel.style.cssText = "display:none;height:100%;width:100%;position:absolute;top:0;left:0;z-index:10;";
 					const frame = document.createElement("iframe");
 					frame.src = "/control/dashboard";
 					frame.style.cssText = "width:100%;height:100%;border:0;";
@@ -169,12 +180,16 @@ window.__ModuleLoader__.load({
 			const observer = new MutationObserver(() => {
 				const header = findHeader();
 				if (header) injectHeader(header);
+				const region = findSidebarRegion();
+				if (region) injectSidebar(region);
 				const tabBar = findConversationTabBar();
 				if (tabBar) injectControlTab(tabBar);
 			});
 			observer.observe(document.documentElement, { childList: true, subtree: true });
 			const h0 = findHeader();
 			if (h0) injectHeader(h0);
+			const r0 = findSidebarRegion();
+			if (r0) injectSidebar(r0);
 			const t0 = findConversationTabBar();
 			if (t0) injectControlTab(t0);
 			refreshBadge();
