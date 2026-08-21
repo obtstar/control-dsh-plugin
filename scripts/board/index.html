@@ -51,7 +51,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const badge = (cls, text) => `<span class="badge ${cls}">${esc(text)}</span>`;
 
 async function jget(p) {
-  const r = await fetch(p);
+  const r = await fetch(p, { cache: "no-store" });
   const t = await r.text();
   if (!r.ok) throw new Error(`HTTP ${r.status}: ${t.slice(0, 200)}`);
   return t ? JSON.parse(t) : null;
@@ -66,7 +66,7 @@ async function jpost(p, body) {
 async function loadAll() {
   document.getElementById("status").textContent = "加载中…";
   try {
-    const [approvals, tasks] = await Promise.all([jget("/api/approvals/pending"), jget("/api/tasks")]);
+    const [approvals, tasks] = await Promise.all([jget("api/approvals/pending"), jget("api/tasks")]);
     renderApprovals(approvals || []);
     renderTasks(tasks || []);
     document.getElementById("status").textContent = `更新于 ${new Date().toLocaleTimeString()} · ${(tasks || []).length} 任务`;
@@ -108,7 +108,7 @@ async function act(taskId, action) {
   const comment = action === "reject" ? prompt(`驳回 ${taskId}，请输入批注（必填）：`) : "";
   if (action === "reject" && !comment) { alert("驳回必须附批注"); return; }
   try {
-    const r = await jpost(`/api/tasks/${encodeURIComponent(taskId)}/action`, { action, comment: comment || "" });
+    const r = await jpost(`api/tasks/${encodeURIComponent(taskId)}/action`, { action, comment: comment || "" });
     alert(`${taskId} → ${r.status}（${r.stage || ""}）`);
     loadAll();
   } catch (e) { alert(e.message); }
