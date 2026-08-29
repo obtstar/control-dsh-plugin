@@ -161,6 +161,7 @@ window.__ModuleLoader__.load({
 				content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--dsw-alias-label-tertiary)">${t('dashboard.status.loading')}</div>`;
 				try {
 					const res = await fetch(`${API_PREFIX}/tasks`);
+					if (!res.ok) throw new Error(`${t('dashboard.error.load')}: HTTP ${res.status}`);
 					const tasks = await res.json();
 					if (!tasks.length) {
 						content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--dsw-alias-label-tertiary)">${t('dashboard.empty.tasks')}</div>`;
@@ -203,6 +204,7 @@ window.__ModuleLoader__.load({
 				content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--dsw-alias-label-tertiary)">${t('dashboard.status.loading')}</div>`;
 				try {
 					const res = await fetch(`${API_PREFIX}/approvals/pending`);
+					if (!res.ok) throw new Error(`${t('dashboard.error.load')}: HTTP ${res.status}`);
 					const approvals = await res.json();
 					if (!approvals.length) {
 						content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--dsw-alias-label-tertiary)">${t('dashboard.empty.approvals')}</div>`;
@@ -231,6 +233,7 @@ window.__ModuleLoader__.load({
 				content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--dsw-alias-label-tertiary)">${t('dashboard.status.loading')}</div>`;
 				try {
 					const res = await fetch(`${API_PREFIX}/audit`);
+					if (!res.ok) throw new Error(`${t('dashboard.error.load')}: HTTP ${res.status}`);
 					const logs = await res.json();
 					if (!logs.length) {
 						content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--dsw-alias-label-tertiary)">${t('dashboard.empty.audit')}</div>`;
