@@ -163,7 +163,7 @@ window.__ModuleLoader__.load({
 					const res = await fetch(`${API_PREFIX}/tasks`);
 					if (!res.ok) throw new Error(`${t('dashboard.error.load')}: HTTP ${res.status}`);
 					const tasks = await res.json();
-					if (!tasks.length) {
+					if (!tasks || !tasks.length) {
 						content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--dsw-alias-label-tertiary)">${t('dashboard.empty.tasks')}</div>`;
 						return;
 					}
@@ -206,7 +206,7 @@ window.__ModuleLoader__.load({
 					const res = await fetch(`${API_PREFIX}/approvals/pending`);
 					if (!res.ok) throw new Error(`${t('dashboard.error.load')}: HTTP ${res.status}`);
 					const approvals = await res.json();
-					if (!approvals.length) {
+					if (!approvals || !approvals.length) {
 						content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--dsw-alias-label-tertiary)">${t('dashboard.empty.approvals')}</div>`;
 						return;
 					}
@@ -235,7 +235,7 @@ window.__ModuleLoader__.load({
 					const res = await fetch(`${API_PREFIX}/audit`);
 					if (!res.ok) throw new Error(`${t('dashboard.error.load')}: HTTP ${res.status}`);
 					const logs = await res.json();
-					if (!logs.length) {
+					if (!logs || !logs.length) {
 						content.innerHTML = `<div style="text-align:center;padding:40px;color:var(--dsw-alias-label-tertiary)">${t('dashboard.empty.audit')}</div>`;
 						return;
 					}
